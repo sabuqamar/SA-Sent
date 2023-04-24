@@ -2,14 +2,12 @@
 from __future__ import division
 from model import *
 from config import config
-import cPickle
-import numpy as np
-import codecs
+import _pickle as cPickle
 import copy
 
 def adjust_learning_rate(optimizer, epoch):
     lr = config.lr / (2 ** (epoch // config.adjust_every))
-    print "Adjust lr to ", lr
+    print("Adjust lr to ", lr)
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -25,7 +23,7 @@ def create_opt(parameters, config):
     return optimizer
 
 def load_data(data_path, if_utf=False):
-    f = open(data_path)
+    f = open(data_path, "rb")
     obj = cPickle.load(f)
     f.close()
     return obj
@@ -34,7 +32,7 @@ id2word = load_data(config.dic_path)
 id2label = ["positive", "neutral", "negative"]
 
 def train():
-    print config
+    print(config)
     best_acc = 0
     best_model = None
 
@@ -47,13 +45,13 @@ def train():
     
     num_batches = len(train_batch)
     bound = num_batches // config.k_fold * (config.k_fold - 1) 
-    print "{0} batches and {1} for dev".format(num_batches, num_batches - bound)
+    print("{0} batches and {1} for dev".format(num_batches, num_batches - bound))
     
     cv_train = train_batch[ : bound]
     cv_test = train_batch[ bound : ]
 
     for e_ in range(config.epoch):
-        print "Epoch ", e_ + 1
+        print("Epoch ", e_ + 1)
         model.train()
         if e_ % config.adjust_every == 0:  adjust_learning_rate(optimizer, e_)
 
@@ -68,30 +66,30 @@ def train():
             # print "Loss", loss.data[0]
 
         acc = evaluate_dev(cv_test, model)
-        print "Dev acc ", acc
+        print("Dev acc ", acc)
         if acc > best_acc: 
             best_acc = acc
             best_model = copy.deepcopy(model)
     evaluate_test(test_batch, best_model)
-    print "Finish with best dev acc {0}".format(best_acc)
+    print("Finish with best dev acc {0}".format(best_acc))
 
 def visualize(sent, mask, best_seq, pred_label, gold):
     try:
-        print u" ".join([id2word[x] for x in sent])
+        print(u" ".join([id2word[x] for x in sent]))
     except:
-        print "unknow char.."
+        print("unknow char..")
         return
-    print "Mask", mask
-    print "Seq", best_seq
-    print "Predict: {0}, Gold: {1}".format(id2label[pred_label], id2label[gold])
-    print "" 
+    print("Mask", mask)
+    print("Seq", best_seq)
+    print("Predict: {0}, Gold: {1}".format(id2label[pred_label], id2label[gold]))
+    print("") 
 
 def evaluate_test(test_batch, model):
-    print "Evaluting"
+    print("Evaluting")
     model.eval()
     all_counter = 0
     correct_count = 0
-    print "transitions matrix ", model.inter_crf.transitions.data
+    print("transitions matrix ", model.inter_crf.transitions.data)
     for sent, mask, label in test_batch:
         pred_label, best_seq = model.predict(sent, mask) 
         visualize(sent, mask, best_seq, pred_label, label)
@@ -99,11 +97,11 @@ def evaluate_test(test_batch, model):
         all_counter += 1
         if pred_label == label:  correct_count += 1
     acc = correct_count * 1.0 / all_counter
-    print "Test Sentiment Accuray {0}, {1}:{2}".format(acc, correct_count, all_counter)
+    print("Test Sentiment Accuray {0}, {1}:{2}".format(acc, correct_count, all_counter))
     return acc
 
 def evaluate_dev(dev_batch, model):
-    print "Evaluting"
+    print("Evaluting")
     model.eval()
     all_counter = 0
     correct_count = 0
@@ -114,7 +112,7 @@ def evaluate_dev(dev_batch, model):
             all_counter += 1
             if pred_label == label:  correct_count += 1
     acc = correct_count * 1.0 / all_counter
-    print "Sentiment Accuray {0}, {1}:{2}".format(acc, correct_count, all_counter)
+    print("Sentiment Accuray {0}, {1}:{2}".format(acc, correct_count, all_counter))
     return acc
 
 if __name__ == "__main__":

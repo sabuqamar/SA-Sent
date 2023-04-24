@@ -1,14 +1,8 @@
-from collections import namedtuple
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 import torch.nn.init as init
 from torch.autograd import Variable
-import pdb
-import cPickle
-import numpy as np
-import math
+import _pickle as cPickle
 from util import *
 
 def init_ortho(module):
@@ -21,7 +15,7 @@ class MLSTM(nn.Module):
         super(MLSTM, self).__init__()
         self.config = config
 
-        self.rnn = nn.LSTM(config.embed_dim + config.mask_dim, config.l_hidden_size / 2, batch_first=True, num_layers = config.l_num_layers / 2,
+        self.rnn = nn.LSTM(config.embed_dim + config.mask_dim, config.l_hidden_size // 2, batch_first=True, num_layers = config.l_num_layers // 2,
             bidirectional=True, dropout=config.l_dropout)
         init_ortho(self.rnn)
 
@@ -63,9 +57,9 @@ class SimpleCat(nn.Module):
         return sent_vec
 
     def load_vector(self):
-        with open(self.config.embed_path) as f:
+        with open(self.config.embed_path, "rb") as f:
             vectors = cPickle.load(f)
-            print "Loaded from {} with shape {}".format(self.config.embed_path, vectors.shape)
+            print("Loaded from {} with shape {}".format(self.config.embed_path, vectors.shape))
             self.word_embed.weight = nn.Parameter(torch.Tensor(vectors))
             # self.word_embed.weight.requires_grad = False
     

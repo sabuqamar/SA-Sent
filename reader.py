@@ -4,13 +4,10 @@ import codecs
 from config import config
 from bs4 import BeautifulSoup
 import pdb
-import torch
-from nltk.tokenize import word_tokenize
 import tokenizer
 import numpy as np
-import re
-import cPickle
-import random
+import _pickle as cPickle
+import random, re
 
 SentInst = namedtuple("SentenceInstance", "id text text_inds opinions")
 OpinionInst = namedtuple("OpinionInstance", "target_text polarity class_ind target_mask")
@@ -45,8 +42,9 @@ class Reader():
     
     def read_data(self, file_name):
         f = codecs.open(file_name, "r", encoding="utf-8")
-        soup = BeautifulSoup(f.read(), "lxml")
+        soup = BeautifulSoup(f.read(), "xml")
         sentence_tags = soup.find_all("sentence")
+        print(len(sentence_tags))
 
         sentence_list = []
         for sent_tag in sentence_tags:
@@ -54,11 +52,11 @@ class Reader():
             sent_text = sent_tag.find("text").contents[0]
             opinion_list = []
             try:
-                asp_tag = sent_tag.find_all("aspectterms")[0]
+                asp_tag = sent_tag.find_all("aspectTerms")[0]
             except:
                 # print "{0} {1} has no opinions".format(sent_id, sent_text)
                 continue
-            opinion_tags = asp_tag.find_all("aspectterm")
+            opinion_tags = asp_tag.find_all("aspectTerm")
             for opinion_tag in opinion_tags:
                 term = opinion_tag.attrs["term"]
                 if term not in sent_text: pdb.set_trace()
@@ -87,11 +85,11 @@ class Reader():
                 for token in tokens:
                     if token not in words_set:
                         words_set.add(token)
-            print "{0} sentences".format(sent_counter)
+            print("{0} sentences".format(sent_counter))
         self.id2word = list(words_set)
         self.word2id = {v:k for k,v in enumerate(self.id2word)}
 
-        print "{0} tokens".format(self.id2word.__len__())
+        print("{0} tokens".format(self.id2word.__len__()))
 
     def tokenize(self, sent_str):
         # return word_tokenize(sent_str)
@@ -122,8 +120,7 @@ class Reader():
                     target_start = sent_tokens.index(target_tokens[0])
                     target_end = sent_tokens[max(0, target_start - 1):].index(target_tokens[-1])  + max(0, target_start - 1)
                 except:
-                    pdb.set_trace()
-                if target_start < 0 or target_end < 0:  pdb.set_trace()
+                    continue
                 mask = [0] * len(sent_tokens)
                 for m_i in range(target_start, target_end + 1):
                     mask[m_i] = 1
@@ -152,7 +149,7 @@ class Reader():
         all_triples = []
         # list of list
         pair_couter = defaultdict(int)
-        print "Sentence size ", len(data)
+        print("Sentence size ", len(data))
         for sent_inst in data:
             tokens = sent_inst.text_inds
             
@@ -163,16 +160,16 @@ class Reader():
                 if tokens is None or mask is None or polarity is None: pdb.set_trace()
                 all_triples.append([tokens, mask, polarity])
                 pair_couter[polarity] += 1
-        print pair_couter
+        print(pair_couter)
 
         if if_batch:
             random.shuffle(all_triples)
             batch_n = len(all_triples) / self.config.batch_size + 1
-            print "{0} instances with {1} batches".format(len(all_triples), batch_n)
+            print("{0} instances with {1} batches".format(len(all_triples), batch_n))
             ret_triples = []
             
             offset = 0
-            for i in range(batch_n):
+            for i in range(int(batch_n)):
                 start = self.config.batch_size * i
                 end = min(self.config.batch_size * (i+1), len(all_triples) )
                 ret_triples.append(all_triples[start : end])
@@ -186,7 +183,7 @@ class Reader():
             for line in f:
                 s_s = line.split()
                 if s_s[0] in self.word2id:
-                    vocab_dic[s_s[0]] = np.array([float(x) for x in s_s[1:]])
+                    vocab_dic[s_s[0]] = np.array([float(x) for x in s_s[1:] if re.match(r'^-?\d+(?:\.\d+)$', x)])
 
         unknowns = np.random.uniform(-0.01, 0.01, 300).astype("float32")
         ret_mat = []
@@ -200,21 +197,25 @@ class Reader():
                 # print token
                 unk_counter += 1
         ret_mat = np.array(ret_mat)
-        with open(OUT_FILE, "w") as f:
+        with open(OUT_FILE, "wb") as f:
             cPickle.dump(ret_mat, f)
-        print "{0} unk out of {1} vocab".format(unk_counter, len(self.id2word))        
+        print("{0} unk out of {1} vocab".format(unk_counter, len(self.id2word)))
     
     def load_vectors(self):
         with open(OUT_FILE) as f:
             self.id2vec = cPickle.load(f)
     
     def debug_single_sample(self, batches, batch_n, sent_n):
+        print(len(batches))
+        print(batch_n)
+        print(len(batches[0]))
+        print(sent_n)
         sent_ind = batches[batch_n][sent_n][0]
-        print " ".join([self.id2word[x] for x in sent_ind])
+        print(" ".join([self.id2word[x] for x in sent_ind]))
         mask = batches[batch_n][sent_n][1]
-        print mask
+        print(mask)
         label = batches[batch_n][sent_n][2]
-        print self.id2label[label]
+        print(self.id2label[label])
         
     
 if __name__ == "__main__":
@@ -228,10 +229,10 @@ if __name__ == "__main__":
     # pdb.set_trace()
 
     # write to pkl
-    with open(DATA_FILE, "w") as f:
+    with open(DATA_FILE, "wb") as f:
         cPickle.dump([train_batch, test_batch],f)
     
-    with codecs.open(DIC_FILE, 'w', encoding="utf-8") as f:
+    with codecs.open(DIC_FILE, 'wb') as f:
         cPickle.dump(reader.id2word, f)
         
     reader.gen_vectors_glove()

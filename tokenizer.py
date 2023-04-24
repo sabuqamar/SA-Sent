@@ -1,15 +1,12 @@
 #!/usr/bin/python
-from stanford_corenlp_pywrapper import CoreNLP
-import pdb
-
-proc = CoreNLP("ssplit", corenlp_jars=["/Users/wangbolin/Desktop/DATASET/stanford-corenlp-python/stanford-corenlp-full-2014-08-27/*"])
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 def tokenize(string):
-    parse_ret = proc.parse_doc(string)
+    sents = sent_tokenize(string)
     ret_l = []
-    sents = parse_ret["sentences"]
     for sent in sents:
-        ret_l.extend(sent["tokens"])
+        tokens = word_tokenize(sent)
+        ret_l.extend(tokens)
     return ret_l
 
 if __name__ == "__main__":
