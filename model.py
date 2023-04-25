@@ -84,7 +84,7 @@ class AspectSent(nn.Module):
         scores = F.softmax(scores)
         cls_loss = -1 * torch.log(scores[label])
 
-        print("cls loss {0} with penalty {1}".format(cls_loss.data[0], norm_pen.data[0]))
+        # print("cls loss {0} with penalty {1}".format(cls_loss.data[0], norm_pen.data[0]))
         return cls_loss + norm_pen 
 
     def predict(self, sent, mask):

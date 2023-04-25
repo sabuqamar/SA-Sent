@@ -183,7 +183,16 @@ class Reader():
             for line in f:
                 s_s = line.split()
                 if s_s[0] in self.word2id:
-                    vocab_dic[s_s[0]] = np.array([float(x) for x in s_s[1:] if re.match(r'^-?\d+(?:\.\d+)$', x)])
+                    counter = 0
+                    vocab_list = []
+                    for x in s_s[1:]:
+                        if counter<300:
+                            if re.match(r'^-?\d+(?:\.\d+)$', x):
+                                vocab_list.append(float(x))
+                            else:
+                                vocab_list.append(float(0.0))
+                            counter+=1
+                    vocab_dic[s_s[0]] = np.array(vocab_list)
 
         unknowns = np.random.uniform(-0.01, 0.01, 300).astype("float32")
         ret_mat = []
@@ -202,7 +211,7 @@ class Reader():
         print("{0} unk out of {1} vocab".format(unk_counter, len(self.id2word)))
     
     def load_vectors(self):
-        with open(OUT_FILE) as f:
+        with open(OUT_FILE, "rb") as f:
             self.id2vec = cPickle.load(f)
     
     def debug_single_sample(self, batches, batch_n, sent_n):
