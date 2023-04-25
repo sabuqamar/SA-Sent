@@ -40,7 +40,6 @@ def train():
     model = AspectSent(config)
     if config.if_gpu: model = model.cuda()
     parameters = filter(lambda p: p.requires_grad, model.parameters())
-    # pdb.set_trace()
     optimizer = create_opt(parameters, config)
     
     num_batches = len(train_batch)
@@ -61,9 +60,8 @@ def train():
             for sent, mask, label in triple_list:
                 cls_loss = model(sent, mask, label)
                 cls_loss.backward()
-            torch.nn.utils.clip_grad_norm(model.parameters(), config.clip_norm, norm_type=2)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config.clip_norm, norm_type=2)
             optimizer.step()
-            # print "Loss", loss.data[0]
 
         acc = evaluate_dev(cv_test, model)
         print("Dev acc ", acc)

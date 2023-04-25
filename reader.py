@@ -54,7 +54,6 @@ class Reader():
             try:
                 asp_tag = sent_tag.find_all("aspectTerms")[0]
             except:
-                # print "{0} {1} has no opinions".format(sent_id, sent_text)
                 continue
             opinion_tags = asp_tag.find_all("aspectTerm")
             for opinion_tag in opinion_tags:
@@ -73,7 +72,7 @@ class Reader():
         words_set = set()
         label_set = set()
 
-        # unknow
+        # unknown
         words_set.add(self.UNK)
 
         for data in [self.train_data, self.test_data]:
@@ -92,7 +91,6 @@ class Reader():
         print("{0} tokens".format(self.id2word.__len__()))
 
     def tokenize(self, sent_str):
-        # return word_tokenize(sent_str)
         sent_str = " ".join(sent_str.split("-"))
         sent_str = " ".join(sent_str.split("/"))
         sent_str = " ".join(sent_str.split("!"))

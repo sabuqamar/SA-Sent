@@ -26,7 +26,6 @@ class AspectSent(nn.Module):
     
     def compute_scores(self, sent, mask):
         if self.config.if_reset:  self.cat_layer.reset_binary()
-        # self.inter_crf.reset_transition()
 
         sent = torch.LongTensor(sent)
         mask = torch.LongTensor(mask)
@@ -34,7 +33,6 @@ class AspectSent(nn.Module):
 
         context = self.lstm(sent_vec)
 
-        # feat_context = torch.cat([context, asp_v], 1) # sent_len * dim_sum
         feat_context = context  # sent_len * dim_sum
         tri_scores = self.feat2tri(feat_context)
         marginals = self.inter_crf(tri_scores)
@@ -48,7 +46,6 @@ class AspectSent(nn.Module):
 
     def compute_predict_scores(self, sent, mask):
         if self.config.if_reset:  self.cat_layer.reset_binary()
-        # self.inter_crf.reset_transition()
 
         sent = torch.LongTensor(sent)
         mask = torch.LongTensor(mask)
@@ -56,7 +53,6 @@ class AspectSent(nn.Module):
 
         context = self.lstm(sent_vec)
 
-        # feat_context = torch.cat([context, asp_v], 1) # sent_len * dim_sum
         feat_context = context  # sent_len * dim_sum
         tri_scores = self.feat2tri(feat_context)
         marginals = self.inter_crf(tri_scores)
@@ -74,8 +70,7 @@ class AspectSent(nn.Module):
         '''
         inputs are list of list for the convenince of top CRF
         '''
-        # scores = self.compute_scores(sents, ents, asps, labels)
-        scores, s_prob, marginal_prob = self.compute_scores(sent, mask)
+        scores, s_prob = self.compute_scores(sent, mask)
 
         pena = F.relu( self.inter_crf.transitions[1,0] - self.inter_crf.transitions[0,0]) + \
             F.relu(self.inter_crf.transitions[0,1] - self.inter_crf.transitions[1,1])
@@ -83,12 +78,11 @@ class AspectSent(nn.Module):
 
         scores = F.softmax(scores)
         cls_loss = -1 * torch.log(scores[label])
-
-        # print("cls loss {0} with penalty {1}".format(cls_loss.data[0], norm_pen.data[0]))
+        print("cls loss {0} with penalty {1}".format(cls_loss.item(), norm_pen.item()))
         return cls_loss + norm_pen 
 
     def predict(self, sent, mask):
         scores, s_probs, best_seqs = self.compute_predict_scores(sent, mask)
         _, pred_label = scores.max(0)        
 
-        return pred_label.data[0], best_seqs
+        return pred_label.item(), best_seqs

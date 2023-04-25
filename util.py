@@ -26,6 +26,8 @@ def argmax_m(mat):
         ret_ind.append(ind_)
         ret_v.append(mat[i][ind_])
     if type(ret_v[0]) == Variable or type(ret_v[0]) == torch.Tensor:
+        if len(ret_v) == 1:
+            return ret_ind, torch.tensor(ret_v)
         return ret_ind, torch.cat(ret_v)
     else:
         return ret_ind, torch.Tensor(ret_v)
@@ -34,15 +36,7 @@ def argmax_m(mat):
 # vec is n * n, norm in row
 def log_sum_exp_m(mat):
     return torch.logsumexp(mat, 1)
-    # row, column = mat.size()
-    # ret_l = []
-    # for i in range(row):
-    #     vec = mat[i]
-    #     max_score = vec[argmax(vec)]
-    #     max_score_broadcast = max_score.view( -1).expand(1, vec.size()[0])
-    #     ret_l.append( max_score + \
-    #     torch.log(torch.sum(torch.exp(vec - max_score_broadcast))))
-    # return torch.cat(ret_l, 0)
+
 
 def log_sum_exp(vec_list):
     tmp_mat = torch.stack(vec_list, 0)
