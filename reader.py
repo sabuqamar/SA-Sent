@@ -87,6 +87,10 @@ class Reader():
             print("{0} sentences".format(sent_counter))
         self.id2word = list(words_set)
         self.word2id = {v:k for k,v in enumerate(self.id2word)}
+        with open("word2id", "wb") as f:
+            cPickle.dump(self.word2id,f)
+        with open("id2word", "wb") as f:
+            cPickle.dump(self.id2word,f)
 
         print("{0} tokens".format(self.id2word.__len__()))
 
@@ -243,8 +247,3 @@ if __name__ == "__main__":
         cPickle.dump(reader.id2word, f)
         
     reader.gen_vectors_glove()
-
-
-        
-
-        

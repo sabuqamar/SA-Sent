@@ -4,6 +4,7 @@ from model import *
 from config import config
 import _pickle as cPickle
 import copy
+from sklearn.metrics import precision_recall_fscore_support
 
 def adjust_learning_rate(optimizer, epoch):
     lr = config.lr / (2 ** (epoch // config.adjust_every))
@@ -70,14 +71,19 @@ def train():
             best_model = copy.deepcopy(model)
     evaluate_test(test_batch, best_model)
     print("Finish with best dev acc {0}".format(best_acc))
+    torch.save(model, "model_params.json")
 
 def visualize(sent, mask, best_seq, pred_label, gold):
     try:
-        print(u" ".join([id2word[x] for x in sent]))
+        acc_sent = []
+        for i, x in enumerate(sent):
+            acc_sent.append(id2word[x])
+        print(u" ".join(acc_sent))
     except:
         print("unknow char..")
         return
     print("Mask", mask)
+
     print("Seq", best_seq)
     print("Predict: {0}, Gold: {1}".format(id2label[pred_label], id2label[gold]))
     print("") 
@@ -88,15 +94,27 @@ def evaluate_test(test_batch, model):
     all_counter = 0
     correct_count = 0
     print("transitions matrix ", model.inter_crf.transitions.data)
+    # Initialize empty lists to store true labels and predicted labels
+    y_true = []
+    y_pred = []
     for sent, mask, label in test_batch:
         pred_label, best_seq = model.predict(sent, mask) 
         visualize(sent, mask, best_seq, pred_label, label)
 
         all_counter += 1
         if pred_label == label:  correct_count += 1
+        y_true.append(label)
+        y_pred.append(pred_label)
     acc = correct_count * 1.0 / all_counter
     print("Test Sentiment Accuray {0}, {1}:{2}".format(acc, correct_count, all_counter))
-    return acc
+   # Calculate precision, recall, F1-score, and support using sklearn's precision_recall_fscore_support function
+    precision, recall, f1_score, support = precision_recall_fscore_support(y_true, y_pred, average='weighted')
+    
+    print("Precision: {:.4f}".format(precision))
+    print("Recall: {:.4f}".format(recall))
+    print("F1-Score: {:.4f}".format(f1_score))
+    
+    return f1_score
 
 def evaluate_dev(dev_batch, model):
     print("Evaluting")
@@ -110,7 +128,7 @@ def evaluate_dev(dev_batch, model):
             all_counter += 1
             if pred_label == label:  correct_count += 1
     acc = correct_count * 1.0 / all_counter
-    print("Sentiment Accuray {0}, {1}:{2}".format(acc, correct_count, all_counter))
+    print("Sentiment Accuracy {0}, {1}:{2}".format(acc, correct_count, all_counter))
     return acc
 
 if __name__ == "__main__":

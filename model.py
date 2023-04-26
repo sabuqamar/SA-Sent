@@ -20,12 +20,14 @@ class AspectSent(nn.Module):
 
         self.cri = nn.CrossEntropyLoss()
         self.cat_layer.load_vector()
+        self.term_scores = []
 
         if not config.if_update_embed:  self.cat_layer.word_embed.weight.requires_grad = False
 
     
     def compute_scores(self, sent, mask):
         if self.config.if_reset:  self.cat_layer.reset_binary()
+        # self.inter_crf.reset_transition()
 
         sent = torch.LongTensor(sent)
         mask = torch.LongTensor(mask)
@@ -33,6 +35,7 @@ class AspectSent(nn.Module):
 
         context = self.lstm(sent_vec)
 
+        # feat_context = torch.cat([context, asp_v], 1) # sent_len * dim_sum
         feat_context = context  # sent_len * dim_sum
         tri_scores = self.feat2tri(feat_context)
         marginals = self.inter_crf(tri_scores)
@@ -46,6 +49,7 @@ class AspectSent(nn.Module):
 
     def compute_predict_scores(self, sent, mask):
         if self.config.if_reset:  self.cat_layer.reset_binary()
+        # self.inter_crf.reset_transition()
 
         sent = torch.LongTensor(sent)
         mask = torch.LongTensor(mask)
@@ -62,6 +66,7 @@ class AspectSent(nn.Module):
 
         sent_v = torch.mm(select_polarity.unsqueeze(0), context) # 1 * feat_dim
         label_scores = self.feat2label(sent_v).squeeze(0)
+        self.term_scores.append(label_scores.detach())
 
         return label_scores, select_polarity, best_seqs
 
@@ -70,7 +75,7 @@ class AspectSent(nn.Module):
         '''
         inputs are list of list for the convenince of top CRF
         '''
-        scores, s_prob = self.compute_scores(sent, mask)
+        scores, s_prob, marginal_prob = self.compute_scores(sent, mask)
 
         pena = F.relu( self.inter_crf.transitions[1,0] - self.inter_crf.transitions[0,0]) + \
             F.relu(self.inter_crf.transitions[0,1] - self.inter_crf.transitions[1,1])
@@ -78,7 +83,7 @@ class AspectSent(nn.Module):
 
         scores = F.softmax(scores)
         cls_loss = -1 * torch.log(scores[label])
-        print("cls loss {0} with penalty {1}".format(cls_loss.item(), norm_pen.item()))
+        # print("cls loss {0} with penalty {1}".format(cls_loss.item(), norm_pen.item()))
         return cls_loss + norm_pen 
 
     def predict(self, sent, mask):
